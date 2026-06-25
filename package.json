@@ -1,0 +1,45 @@
+{
+  "name": "script-runner",
+  "displayName": "Conversores Notebook (Contactabilidad)",
+  "description": "Convierte Markdown / Scala-Databricks / Jupyter entre sí desde un formulario en VS Code. Sin dependencias externas.",
+  "version": "0.1.0",
+  "publisher": "cesar",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "scriptRunner",
+          "title": "Conversores",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "scriptRunner": [
+        {
+          "id": "scriptRunner.form",
+          "name": "Conversor",
+          "type": "webview"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}
