@@ -3,7 +3,7 @@
   "displayName": "Conversores Notebook (Contactabilidad)",
   "description": "Convierte Markdown / Scala-Databricks / Jupyter entre sí desde un formulario en VS Code. Sin dependencias externas.",
   "version": "0.1.1",
-  "publisher": "cesar",
+  "publisher": "rasec770",
   "license": "MIT",
   "repository": {
     "type": "git",
