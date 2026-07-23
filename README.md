@@ -1,36 +1,45 @@
-# Conversores Notebook (Contactabilidad)
+# Conversores Notebook
 
-Extensión de VS Code que convierte entre **Markdown**, **Scala (Databricks)** y
-**Jupyter (.ipynb)** desde un formulario en la barra lateral. Toda la lógica está
-portada a TypeScript: **no requiere Python** ni ninguna dependencia externa.
+Convierte notebooks entre **Markdown**, **Scala (Databricks)** y **Jupyter (`.ipynb`)**
+desde un formulario en la barra lateral de VS Code.
 
-## Qué hace (versión 0.1.0)
+**Sin Python. Sin dependencias externas.** Toda la lógica está escrita en TypeScript
+y se ejecuta dentro del propio editor.
 
-Panel **Conversores** en la barra lateral con un formulario:
+## Características
 
-1. Eliges la conversión.
-2. Indicas el archivo a convertir (campo de texto o botón **Examinar…**).
-3. La ruta de salida se sugiere sola (editable).
-4. Botón **Convertir** → genera el archivo y lo abre en el editor.
+- 🔄 **Tres conversiones**: Markdown → Jupyter, Scala Databricks → Jupyter, Jupyter → Markdown
+- 📂 Elige el archivo con **Examinar…** o usa directamente el **archivo activo del editor**
+- 📝 La ruta de salida se **sugiere automáticamente** (y puedes editarla)
+- 📊 En *Jupyter → Markdown*, opción de **incluir las salidas y errores** de las celdas
+- ⚡ Arranque instantáneo: cero dependencias que instalar
 
-### Conversiones disponibles
+## Conversiones disponibles
 
-| Conversión                          | Origen     | Destino    |
-| ----------------------------------- | ---------- | ---------- |
-| Markdown → Jupyter                  | `.md`      | `.ipynb`   |
-| Scala Databricks → Jupyter          | `.scala`   | `.ipynb`   |
-| Jupyter → Markdown                  | `.ipynb`   | `.md`      |
+| Conversión                 | Origen   | Destino  |
+| -------------------------- | -------- | -------- |
+| Markdown → Jupyter         | `.md`    | `.ipynb` |
+| Scala Databricks → Jupyter | `.scala` | `.ipynb` |
+| Jupyter → Markdown         | `.ipynb` | `.md`    |
 
-En *Jupyter → Markdown* hay una casilla para **incluir las salidas y errores** de
-las celdas. Para no pisar el `.md` fuente, la salida se sugiere con sufijo
-`_reconstruido`.
+## Uso
 
-## Equivalencia con los scripts Python
+1. Abre el panel **Conversores** en la barra de actividad (icono de flechas).
+2. Elige la conversión que quieras.
+3. Indica el archivo de entrada: escribe la ruta, pulsa **Examinar…**, o usa
+   **Usar archivo activo del editor** para tomar el que ya tienes abierto.
+4. La ruta de salida se rellena sola; ajústala si lo necesitas.
+5. Pulsa **Convertir**. El archivo se genera y se abre en el editor.
 
-Los conversores son un port fiel de `convert_md_to_ipynb.py`,
-`convert_scala_to_ipynb.py` y `convert_ipynb_to_md.py`. Se verificó que producen
-salida **byte a byte idéntica** a los scripts originales sobre los notebooks reales
-de `Documentos/Analisis`.
+### Jupyter → Markdown
+
+Hay una casilla para **incluir las salidas y errores** de las celdas en el Markdown
+resultante. Para no sobrescribir un `.md` de origen, la salida se sugiere con el
+sufijo `_reconstruido`.
+
+## Requisitos
+
+VS Code **1.85.0** o superior. Nada más.
 
 ## Desarrollo
 
@@ -41,7 +50,7 @@ npm run compile   # o npm run watch
 
 Pulsa **F5** para abrir una ventana de desarrollo con la extensión cargada.
 
-## Estructura
+### Estructura
 
 ```
 src/
@@ -55,9 +64,17 @@ src/
     └── ipynbToMd.ts
 ```
 
-## Siguientes pasos (ideas)
+## Ideas para próximas versiones
 
-- Convertir varios archivos a la vez (selección múltiple / carpeta).
-- Recordar la última carpeta usada.
-- Vista previa del resultado antes de escribir.
-- Empaquetar como `.vsix` (`vsce package`) para instalarlo fijo.
+- Convertir varios archivos a la vez (selección múltiple o carpeta)
+- Recordar la última carpeta usada
+- Vista previa del resultado antes de escribir
+
+## Problemas y sugerencias
+
+¿Algo no funciona o echas de menos una conversión?
+Abre un issue en [GitHub](https://github.com/rasec770/script-runner/issues).
+
+## Licencia
+
+[MIT](LICENSE) © Cesar Pablo Anco Jove

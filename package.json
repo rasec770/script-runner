@@ -1,7 +1,7 @@
 {
   "name": "script-runner",
-  "displayName": "Conversores Notebook (Contactabilidad)",
-  "description": "Convierte Markdown / Scala-Databricks / Jupyter entre sí desde un formulario en VS Code. Sin dependencias externas.",
+  "displayName": "Conversores Notebook: Markdown, Databricks y Jupyter",
+  "description": "Convierte notebooks entre Markdown, Scala (Databricks) y Jupyter (.ipynb) desde un formulario en la barra lateral. Sin Python ni dependencias externas.",
   "version": "0.1.1",
   "publisher": "rasec770",
   "license": "MIT",
@@ -18,7 +18,19 @@
     "vscode": "^1.85.0"
   },
   "categories": [
+    "Notebooks",
+    "Formatters",
     "Other"
+  ],
+  "keywords": [
+    "markdown",
+    "jupyter",
+    "ipynb",
+    "databricks",
+    "scala",
+    "notebook",
+    "converter",
+    "conversor"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
