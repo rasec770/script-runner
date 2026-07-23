@@ -7,3 +7,5 @@ tsconfig.json
 .gitignore
 .vscodeignore
 package-lock.json
+media/icon-marketplace.svg
+*.vsix

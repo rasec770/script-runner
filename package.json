@@ -4,6 +4,7 @@
   "description": "Convierte Markdown / Scala-Databricks / Jupyter entre sí desde un formulario en VS Code. Sin dependencias externas.",
   "version": "0.1.1",
   "publisher": "cesar",
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
