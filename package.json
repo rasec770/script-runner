@@ -2,7 +2,7 @@
   "name": "script-runner",
   "displayName": "Conversores Notebook (Contactabilidad)",
   "description": "Convierte Markdown / Scala-Databricks / Jupyter entre sí desde un formulario en VS Code. Sin dependencias externas.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "cesar",
   "engines": {
     "vscode": "^1.85.0"

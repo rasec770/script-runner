@@ -66,6 +66,52 @@ class FormViewProvider implements vscode.WebviewViewProvider {
           break;
         }
 
+        case "useActive": {
+          const editor = vscode.window.activeTextEditor;
+          if (!editor) {
+            view.webview.postMessage({
+              type: "log",
+              level: "error",
+              message: "No hay ningún archivo abierto en el editor.",
+            });
+            break;
+          }
+          const doc = editor.document;
+          if (doc.isUntitled) {
+            view.webview.postMessage({
+              type: "log",
+              level: "error",
+              message: "El archivo activo no está guardado. Guárdalo primero.",
+            });
+            break;
+          }
+          const inputPath = doc.uri.fsPath;
+          const ext = path.extname(inputPath).toLowerCase();
+          const conv = CONVERTERS.find((c) => c.inputExts.includes(ext));
+          if (!conv) {
+            view.webview.postMessage({
+              type: "log",
+              level: "error",
+              message: `No hay conversor para "${ext}" (se admiten .md, .scala, .ipynb).`,
+            });
+            break;
+          }
+          if (doc.isDirty) {
+            view.webview.postMessage({
+              type: "log",
+              level: "info",
+              message: "Aviso: el archivo tiene cambios sin guardar; se convertirá la versión en disco.",
+            });
+          }
+          view.webview.postMessage({
+            type: "activeFile",
+            converterId: conv.id,
+            inputPath,
+            outputPath: defaultOutputPath(inputPath, conv),
+          });
+          break;
+        }
+
         case "run":
           await this.runConversion(view, msg);
           break;
@@ -158,6 +204,7 @@ class FormViewProvider implements vscode.WebviewViewProvider {
     <input type="text" id="input" placeholder="Ruta del archivo…">
     <button class="secondary" id="browse">Examinar…</button>
   </div>
+  <button class="secondary" id="active" style="width:100%; margin-top:6px">Usar archivo activo del editor</button>
 
   <label for="output">Archivo de salida</label>
   <input type="text" id="output" placeholder="(automático)">
@@ -199,6 +246,7 @@ class FormViewProvider implements vscode.WebviewViewProvider {
   $('input').addEventListener('change', requestDefaultOutput);
   $('browse').addEventListener('click', () =>
     vscode.postMessage({ type: 'browse', converterId: $('conv').value }));
+  $('active').addEventListener('click', () => vscode.postMessage({ type: 'useActive' }));
 
   $('run').addEventListener('click', () => {
     $('log').textContent = '';
@@ -218,6 +266,11 @@ class FormViewProvider implements vscode.WebviewViewProvider {
       $('conv').innerHTML = converters.map(c => '<option value="' + c.id + '">' + c.label + '</option>').join('');
       refreshOutputsRow();
     } else if (m.type === 'picked') {
+      $('input').value = m.inputPath;
+      $('output').value = m.outputPath;
+    } else if (m.type === 'activeFile') {
+      $('conv').value = m.converterId;
+      refreshOutputsRow();
       $('input').value = m.inputPath;
       $('output').value = m.outputPath;
     } else if (m.type === 'outputSuggestion') {
