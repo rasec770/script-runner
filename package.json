@@ -5,6 +5,14 @@
   "version": "0.1.1",
   "publisher": "cesar",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rasec770/script-runner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rasec770/script-runner/issues"
+  },
+  "homepage": "https://github.com/rasec770/script-runner#readme",
   "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.85.0"
