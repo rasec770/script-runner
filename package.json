@@ -1,5 +1,5 @@
 {
-  "name": "script-runner",
+  "name": "conversores-notebook",
   "displayName": "Conversores Notebook: Markdown, Databricks y Jupyter",
   "description": "Convierte notebooks entre Markdown, Scala (Databricks) y Jupyter (.ipynb) desde un formulario en la barra lateral. Sin Python ni dependencias externas.",
   "version": "0.1.1",
