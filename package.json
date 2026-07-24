@@ -2,7 +2,7 @@
   "name": "conversores-notebook",
   "displayName": "Conversores Notebook: Markdown, Databricks y Jupyter",
   "description": "Convierte notebooks entre Markdown, Scala (Databricks) y Jupyter (.ipynb) desde un formulario en la barra lateral. Sin Python ni dependencias externas.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publisher": "rasec770",
   "license": "MIT",
   "repository": {
@@ -50,18 +50,30 @@
           "id": "scriptRunner.form",
           "name": "Conversor",
           "type": "webview"
+        },
+        {
+          "id": "scriptRunner.qrForm",
+          "name": "Transmisor QR",
+          "type": "webview"
         }
       ]
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile && npm run bundle",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "bundle": "esbuild src/extension.ts --bundle --platform=node --external:vscode --outfile=out/extension.js"
   },
   "devDependencies": {
     "@types/node": "^20.x",
+    "@types/qrcode": "^1.5.6",
     "@types/vscode": "^1.85.0",
+    "esbuild": "^0.28.1",
     "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "qrcode": "^1.5.4"
   }
 }

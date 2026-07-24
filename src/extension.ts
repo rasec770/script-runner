@@ -2,11 +2,14 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import { CONVERTERS, getConverter, defaultOutputPath } from "./converters";
+import { QrFormViewProvider } from "./qr/formView";
 
 export function activate(context: vscode.ExtensionContext): void {
   const provider = new FormViewProvider(context.extensionUri);
+  const qrProvider = new QrFormViewProvider(context.extensionUri);
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(FormViewProvider.viewType, provider)
+    vscode.window.registerWebviewViewProvider(FormViewProvider.viewType, provider),
+    vscode.window.registerWebviewViewProvider(QrFormViewProvider.viewType, qrProvider)
   );
 }
 

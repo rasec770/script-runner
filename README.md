@@ -12,6 +12,7 @@ y se ejecuta dentro del propio editor.
 - 📂 Elige el archivo con **Examinar…** o usa directamente el **archivo activo del editor**
 - 📝 La ruta de salida se **sugiere automáticamente** (y puedes editarla)
 - 📊 En *Jupyter → Markdown*, opción de **incluir las salidas y errores** de las celdas
+- 📡 **Transmisor QR**: convierte un archivo o carpeta en una secuencia animada de códigos QR para transferirlo filmando la pantalla
 - ⚡ Arranque instantáneo: cero dependencias que instalar
 
 ## Conversiones disponibles
@@ -37,6 +38,22 @@ Hay una casilla para **incluir las salidas y errores** de las celdas en el Markd
 resultante. Para no sobrescribir un `.md` de origen, la salida se sugiere con el
 sufijo `_reconstruido`.
 
+## Transmisor QR
+
+En el mismo panel **Conversores** hay una segunda vista, **Transmisor QR**, que
+convierte cualquier archivo o carpeta en una secuencia de códigos QR:
+
+1. Elige el **origen** (archivo o carpeta). Se comprime en ZIP en memoria.
+2. El ZIP se parte en fragmentos (por defecto 2500 bytes) y cada fragmento se
+   codifica como un QR con cabecera `P:ii/nn|`, precedido por un QR de
+   sincronización `SYNC|n`.
+3. Pulsa **Preparar y abrir reproductor**: se abre un panel en el editor que
+   reproduce la secuencia en bucle (SYNC → datos → SYNC…).
+
+En el reproductor puedes ajustar los **ms por QR**, los **segundos de SYNC** y
+**excluir frames** ya capturados con rangos tipo `0-5,12-69` (útil para repetir
+solo los que faltaron al escanear).
+
 ## Requisitos
 
 VS Code **1.85.0** o superior. Nada más.
@@ -55,13 +72,17 @@ Pulsa **F5** para abrir una ventana de desarrollo con la extensión cargada.
 ```
 src/
 ├── extension.ts            # webview del formulario + lectura/escritura de archivos
-└── converters/
-    ├── index.ts            # registro de conversores (alimenta el formulario)
-    ├── types.ts            # ConvertResult + fábrica de notebook
-    ├── helpers.ts          # regex y utilidades compartidas
-    ├── mdToIpynb.ts
-    ├── scalaToIpynb.ts
-    └── ipynbToMd.ts
+├── converters/
+│   ├── index.ts            # registro de conversores (alimenta el formulario)
+│   ├── types.ts            # ConvertResult + fábrica de notebook
+│   ├── helpers.ts          # regex y utilidades compartidas
+│   ├── mdToIpynb.ts
+│   ├── scalaToIpynb.ts
+│   └── ipynbToMd.ts
+└── qr/
+    ├── encoder.ts          # ZIP (fflate) → fragmentos → QRs SVG (qrcode)
+    ├── formView.ts         # vista lateral "Transmisor QR"
+    └── playerPanel.ts      # panel reproductor de la secuencia
 ```
 
 ## Ideas para próximas versiones
