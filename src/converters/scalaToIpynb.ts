@@ -1,10 +1,10 @@
 // Scala (notebook Databricks) -> Jupyter .ipynb. Portado de convert_scala_to_ipynb.py.
-import { stripBlankEdges, toSourceArray, notebookName } from "./helpers";
+import { normalizeInput, stripBlankEdges, toSourceArray, notebookName } from "./helpers";
 import { buildNotebook, ConvertResult } from "./types";
 
 /** Convierte un .scala de Databricks (celdas `// COMMAND ----------`) al JSON de un notebook. */
 export function scalaToIpynb(text: string, outPath: string): ConvertResult {
-  let lines = text.split("\n");
+  let lines = normalizeInput(text).split("\n");
   if (lines.length && lines[0].trim() === "// Databricks notebook source") {
     lines = lines.slice(1);
   }

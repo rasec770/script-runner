@@ -1,5 +1,5 @@
 // Markdown -> Jupyter .ipynb. Portado de convert_md_to_ipynb.py.
-import { FENCE, HEADING, stripBlankEdges, toSourceArray, notebookName } from "./helpers";
+import { FENCE, HEADING, normalizeInput, stripBlankEdges, toSourceArray, notebookName } from "./helpers";
 import { buildNotebook, ConvertResult } from "./types";
 
 // Solo estos lenguajes se vuelven CELDA ejecutable. Otro hint o sin hint queda VERBATIM en el markdown.
@@ -21,7 +21,7 @@ function demoteHeadings(ls: string[]): string[] {
 
 /** Convierte texto Markdown al JSON de un notebook Jupyter. */
 export function mdToIpynb(text: string, outPath: string): ConvertResult {
-  const lines = text.split("\n");
+  const lines = normalizeInput(text).split("\n");
 
   const rawCells: RawCell[] = [];
   let cur: string[] = []; // prosa markdown (incluye bloques ilustrativos verbatim)

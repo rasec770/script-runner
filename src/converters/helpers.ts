@@ -6,6 +6,12 @@ export const FENCE = /^(`{3,}|~{3,})[ \t]*([A-Za-z0-9_+-]*)[ \t]*$/;
 /** Encabezado ATX: #..###### seguido de espacio. */
 export const HEADING = /^(#{1,6})(\s)/;
 
+/** Quita el BOM inicial y unifica CRLF/CR a \n. Sin esto, un archivo guardado en
+ *  Windows deja un \r al final de cada línea y ninguna FENCE llega a hacer match. */
+export function normalizeInput(text: string): string {
+  return text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
+}
+
 /** Quita líneas en blanco al inicio y al final de una lista de líneas. */
 export function stripBlankEdges(ls: string[]): string[] {
   let a = 0;
