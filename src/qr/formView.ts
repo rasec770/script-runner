@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as crypto from "crypto";
 import { generarQrFrames, QrEncodeConfig } from "./encoder";
 import { QrPlayerPanel } from "./playerPanel";
+import { activeFilePath } from "../activeFile";
 
 /** Formulario lateral del transmisor QR: origen + parámetros + preparar. */
 export class QrFormViewProvider implements vscode.WebviewViewProvider {
@@ -37,6 +38,23 @@ export class QrFormViewProvider implements vscode.WebviewViewProvider {
           if (picked && picked[0]) {
             view.webview.postMessage({ type: "picked", ruta: picked[0].fsPath });
           }
+          break;
+        }
+
+        case "useActive": {
+          const activo = activeFilePath();
+          if ("error" in activo) {
+            view.webview.postMessage({ type: "log", level: "error", message: activo.error });
+            break;
+          }
+          if (activo.dirty) {
+            view.webview.postMessage({
+              type: "log",
+              level: "info",
+              message: "Aviso: el archivo tiene cambios sin guardar; se transmitirá la versión en disco.",
+            });
+          }
+          view.webview.postMessage({ type: "picked", ruta: activo.path });
           break;
         }
 
@@ -143,6 +161,7 @@ function getFormHtml(): string {
     <button class="secondary" id="pickFile">Archivo…</button>
     <button class="secondary" id="pickFolder">Carpeta…</button>
   </div>
+  <button class="secondary" id="useActive" style="width:100%; margin-top:6px">Usar archivo activo del editor</button>
 
   <label>Parámetros</label>
   <div class="grid">
@@ -169,6 +188,10 @@ function getFormHtml(): string {
 
   $('pickFile').addEventListener('click', () => vscode.postMessage({ type: 'pickFile' }));
   $('pickFolder').addEventListener('click', () => vscode.postMessage({ type: 'pickFolder' }));
+  $('useActive').addEventListener('click', () => {
+    $('log').textContent = '';
+    vscode.postMessage({ type: 'useActive' });
+  });
 
   $('prepare').addEventListener('click', () => {
     $('log').textContent = '';

@@ -2,7 +2,7 @@
   "name": "conversores-notebook",
   "displayName": "Conversores Notebook: Markdown, Databricks y Jupyter",
   "description": "Convierte notebooks entre Markdown, Scala (Databricks) y Jupyter (.ipynb) desde un formulario en la barra lateral. Sin Python ni dependencias externas.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "publisher": "rasec770",
   "license": "MIT",
   "repository": {

@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { CONVERTERS, getConverter, defaultOutputPath } from "./converters";
 import { QrFormViewProvider } from "./qr/formView";
+import { activeFilePath } from "./activeFile";
 
 export function activate(context: vscode.ExtensionContext): void {
   const provider = new FormViewProvider(context.extensionUri);
@@ -70,25 +71,12 @@ class FormViewProvider implements vscode.WebviewViewProvider {
         }
 
         case "useActive": {
-          const editor = vscode.window.activeTextEditor;
-          if (!editor) {
-            view.webview.postMessage({
-              type: "log",
-              level: "error",
-              message: "No hay ningún archivo abierto en el editor.",
-            });
+          const activo = activeFilePath();
+          if ("error" in activo) {
+            view.webview.postMessage({ type: "log", level: "error", message: activo.error });
             break;
           }
-          const doc = editor.document;
-          if (doc.isUntitled) {
-            view.webview.postMessage({
-              type: "log",
-              level: "error",
-              message: "El archivo activo no está guardado. Guárdalo primero.",
-            });
-            break;
-          }
-          const inputPath = doc.uri.fsPath;
+          const inputPath = activo.path;
           const ext = path.extname(inputPath).toLowerCase();
           const conv = CONVERTERS.find((c) => c.inputExts.includes(ext));
           if (!conv) {
@@ -99,7 +87,7 @@ class FormViewProvider implements vscode.WebviewViewProvider {
             });
             break;
           }
-          if (doc.isDirty) {
+          if (activo.dirty) {
             view.webview.postMessage({
               type: "log",
               level: "info",
