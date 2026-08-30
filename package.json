@@ -1,8 +1,8 @@
 {
   "name": "conversores-notebook",
   "displayName": "Conversores Notebook: Markdown, Databricks y Jupyter",
-  "description": "Convierte notebooks entre Markdown, Scala (Databricks) y Jupyter (.ipynb) desde un formulario en la barra lateral. Sin Python ni dependencias externas.",
-  "version": "0.2.3",
+  "description": "Convierte notebooks entre Markdown, Scala (Databricks) y Jupyter (.ipynb), y archivos CSV en tablas Markdown, desde un formulario en la barra lateral. Sin Python ni dependencias externas.",
+  "version": "0.3.0",
   "publisher": "rasec770",
   "license": "MIT",
   "repository": {
@@ -30,7 +30,9 @@
     "scala",
     "notebook",
     "converter",
-    "conversor"
+    "conversor",
+    "csv",
+    "tabla"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",

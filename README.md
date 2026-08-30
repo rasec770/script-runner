@@ -1,14 +1,14 @@
 # Conversores Notebook
 
-Convierte notebooks entre **Markdown**, **Scala (Databricks)** y **Jupyter (`.ipynb`)**
-desde un formulario en la barra lateral de VS Code.
+Convierte notebooks entre **Markdown**, **Scala (Databricks)** y **Jupyter (`.ipynb`)**,
+y archivos **CSV** en tablas Markdown, desde un formulario en la barra lateral de VS Code.
 
 **Sin Python. Sin dependencias externas.** Toda la lógica está escrita en TypeScript
 y se ejecuta dentro del propio editor.
 
 ## Características
 
-- 🔄 **Tres conversiones**: Markdown → Jupyter, Scala Databricks → Jupyter, Jupyter → Markdown
+- 🔄 **Cuatro conversiones**: Markdown → Jupyter, Scala Databricks → Jupyter, Jupyter → Markdown, CSV → tabla Markdown
 - 📂 Elige el archivo con **Examinar…** o usa directamente el **archivo activo del editor**
 - 📝 La ruta de salida se **sugiere automáticamente** (y puedes editarla)
 - 📊 En *Jupyter → Markdown*, opción de **incluir las salidas y errores** de las celdas
@@ -22,6 +22,7 @@ y se ejecuta dentro del propio editor.
 | Markdown → Jupyter         | `.md`    | `.ipynb` |
 | Scala Databricks → Jupyter | `.scala` | `.ipynb` |
 | Jupyter → Markdown         | `.ipynb` | `.md`    |
+| CSV → tabla Markdown      | `.csv`, `.tsv` | `.md` |
 
 ## Uso
 
@@ -37,6 +38,13 @@ y se ejecuta dentro del propio editor.
 Hay una casilla para **incluir las salidas y errores** de las celdas en el Markdown
 resultante. Para no sobrescribir un `.md` de origen, la salida se sugiere con el
 sufijo `_reconstruido`.
+
+### CSV → tabla Markdown
+
+Genera una tabla GFM lista para pegar en cualquier documento. El delimitador se
+detecta solo (coma, punto y coma, tabulación o barra vertical), respeta las comillas
+de RFC 4180 —incluidos los saltos de línea dentro de un campo, que se convierten en
+`<br>`— y escapa las barras verticales del dato para que no partan la columna.
 
 ## Transmisor QR
 

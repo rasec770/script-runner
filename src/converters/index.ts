@@ -4,6 +4,7 @@ import { ConvertResult } from "./types";
 import { mdToIpynb } from "./mdToIpynb";
 import { scalaToIpynb } from "./scalaToIpynb";
 import { ipynbToMd } from "./ipynbToMd";
+import { csvToMd } from "./csvToMd";
 
 export interface Converter {
   id: string;
@@ -47,6 +48,15 @@ export const CONVERTERS: Converter[] = [
     // El .md suele ser la fuente de verdad: no pisarlo por defecto.
     outputSuffix: "_reconstruido",
     run: (input, _outPath, includeOutputs) => ipynbToMd(input, includeOutputs),
+  },
+  {
+    id: "csv-to-md",
+    label: "CSV → Tabla Markdown",
+    inputExts: [".csv", ".tsv"],
+    outputExt: ".md",
+    hasOutputsOption: false,
+    outputSuffix: "",
+    run: (input) => csvToMd(input),
   },
 ];
 
