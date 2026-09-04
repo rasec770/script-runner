@@ -2,7 +2,7 @@
   "name": "conversores-notebook",
   "displayName": "Conversores Notebook: Markdown, Databricks y Jupyter",
   "description": "Convierte notebooks, CSV y exportaciones MHTML de Jira a Markdown desde un formulario en la barra lateral. Sin Python.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "rasec770",
   "license": "MIT",
   "repository": {
