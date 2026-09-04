@@ -5,6 +5,14 @@ export interface ConvertResult {
   content: string;
   /** Resumen legible de lo que se generó (para el log del formulario). */
   log: string;
+  /** Recursos binarios generados junto al archivo principal (por ejemplo, imágenes). */
+  assets?: GeneratedAsset[];
+}
+
+export interface GeneratedAsset {
+  /** Ruta relativa al directorio del archivo principal. */
+  relativePath: string;
+  content: Buffer;
 }
 
 /** Construye el objeto notebook Jupyter/Databricks común a md->ipynb y scala->ipynb. */

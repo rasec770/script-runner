@@ -5,6 +5,7 @@ import { mdToIpynb } from "./mdToIpynb";
 import { scalaToIpynb } from "./scalaToIpynb";
 import { ipynbToMd } from "./ipynbToMd";
 import { csvToMd } from "./csvToMd";
+import { mhtmlToMd } from "./mhtmlToMd";
 
 export interface Converter {
   id: string;
@@ -57,6 +58,15 @@ export const CONVERTERS: Converter[] = [
     hasOutputsOption: false,
     outputSuffix: "",
     run: (input) => csvToMd(input),
+  },
+  {
+    id: "mhtml-to-md",
+    label: "Jira MHTML → Markdown",
+    inputExts: [".mhtml", ".mht"],
+    outputExt: ".md",
+    hasOutputsOption: false,
+    outputSuffix: "",
+    run: (input, outPath) => mhtmlToMd(input, outPath),
   },
 ];
 

@@ -141,6 +141,15 @@ class FormViewProvider implements vscode.WebviewViewProvider {
       const input = fs.readFileSync(inputPath, "utf8");
       const result = conv.run(input, outputPath, !!msg.includeOutputs);
       fs.writeFileSync(outputPath, result.content, "utf8");
+      const outputDir = path.resolve(path.dirname(outputPath));
+      for (const asset of result.assets ?? []) {
+        const assetPath = path.resolve(outputDir, asset.relativePath);
+        if (!assetPath.startsWith(outputDir + path.sep)) {
+          throw new Error(`Ruta de recurso no válida: ${asset.relativePath}`);
+        }
+        fs.mkdirSync(path.dirname(assetPath), { recursive: true });
+        fs.writeFileSync(assetPath, asset.content);
+      }
       log("ok", `OK → ${outputPath}`);
       log("info", result.log);
 

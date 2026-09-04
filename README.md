@@ -1,14 +1,15 @@
 # Conversores Notebook
 
 Convierte notebooks entre **Markdown**, **Scala (Databricks)** y **Jupyter (`.ipynb`)**,
-y archivos **CSV** en tablas Markdown, desde un formulario en la barra lateral de VS Code.
+y archivos **CSV** en tablas Markdown, además de exportaciones **MHTML de Jira**,
+desde un formulario en la barra lateral de VS Code.
 
 **Sin Python. Sin dependencias externas.** Toda la lógica está escrita en TypeScript
 y se ejecuta dentro del propio editor.
 
 ## Características
 
-- 🔄 **Cuatro conversiones**: Markdown → Jupyter, Scala Databricks → Jupyter, Jupyter → Markdown, CSV → tabla Markdown
+- 🔄 **Cinco conversiones**: Markdown → Jupyter, Scala Databricks → Jupyter, Jupyter → Markdown, CSV → tabla Markdown y Jira MHTML → Markdown
 - 📂 Elige el archivo con **Examinar…** o usa directamente el **archivo activo del editor**
 - 📝 La ruta de salida se **sugiere automáticamente** (y puedes editarla)
 - 📊 En *Jupyter → Markdown*, opción de **incluir las salidas y errores** de las celdas
@@ -23,6 +24,7 @@ y se ejecuta dentro del propio editor.
 | Scala Databricks → Jupyter | `.scala` | `.ipynb` |
 | Jupyter → Markdown         | `.ipynb` | `.md`    |
 | CSV → tabla Markdown      | `.csv`, `.tsv` | `.md` |
+| Jira MHTML → Markdown     | `.mhtml`, `.mht` | `.md` |
 
 ## Uso
 
@@ -45,6 +47,18 @@ Genera una tabla GFM lista para pegar en cualquier documento. El delimitador se
 detecta solo (coma, punto y coma, tabulación o barra vertical), respeta las comillas
 de RFC 4180 —incluidos los saltos de línea dentro de un campo, que se convierten en
 `<br>`— y escapa las barras verticales del dato para que no partan la columna.
+
+### Jira MHTML → Markdown
+
+Convierte una incidencia exportada desde Jira como MHTML y genera un Markdown con
+el contexto, la descripción, las instrucciones de despliegue y la ventana de
+ejecución. Las secciones ausentes o que sólo conservan texto de plantilla se omiten;
+una nota real como «no aplica» sí se conserva.
+
+Las imágenes usadas por las instrucciones se decodifican desde MIME y se guardan en
+una carpeta `<nombre>_assets` junto al Markdown. El conversor reescribe los enlaces
+para que se muestren localmente y excluye navegación, scripts, estilos, avatares y
+comentarios históricos de Jira.
 
 ## Transmisor QR
 
@@ -86,7 +100,8 @@ src/
 │   ├── helpers.ts          # regex y utilidades compartidas
 │   ├── mdToIpynb.ts
 │   ├── scalaToIpynb.ts
-│   └── ipynbToMd.ts
+│   ├── ipynbToMd.ts
+│   └── mhtmlToMd.ts
 └── qr/
     ├── encoder.ts          # ZIP (fflate) → fragmentos → QRs SVG (qrcode)
     ├── formView.ts         # vista lateral "Transmisor QR"

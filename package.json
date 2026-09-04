@@ -1,7 +1,7 @@
 {
   "name": "conversores-notebook",
   "displayName": "Conversores Notebook: Markdown, Databricks y Jupyter",
-  "description": "Convierte notebooks entre Markdown, Scala (Databricks) y Jupyter (.ipynb), y archivos CSV en tablas Markdown, desde un formulario en la barra lateral. Sin Python ni dependencias externas.",
+  "description": "Convierte notebooks, CSV y exportaciones MHTML de Jira a Markdown desde un formulario en la barra lateral. Sin Python.",
   "version": "0.3.0",
   "publisher": "rasec770",
   "license": "MIT",
@@ -32,7 +32,9 @@
     "converter",
     "conversor",
     "csv",
-    "tabla"
+    "tabla",
+    "mhtml",
+    "jira"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
@@ -65,7 +67,8 @@
     "vscode:prepublish": "npm run compile && npm run bundle",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "bundle": "esbuild src/extension.ts --bundle --platform=node --external:vscode --outfile=out/extension.js"
+    "bundle": "esbuild src/extension.ts --bundle --platform=node --external:vscode --outfile=out/extension.js",
+    "test": "npm run compile && node --test out/converters/*.test.js"
   },
   "devDependencies": {
     "@types/node": "^20.x",
