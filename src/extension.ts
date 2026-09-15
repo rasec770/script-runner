@@ -80,10 +80,11 @@ class FormViewProvider implements vscode.WebviewViewProvider {
           const ext = path.extname(inputPath).toLowerCase();
           const conv = CONVERTERS.find((c) => c.inputExts.includes(ext));
           if (!conv) {
+            const admitidas = Array.from(new Set(CONVERTERS.flatMap((c) => c.inputExts))).join(", ");
             view.webview.postMessage({
               type: "log",
               level: "error",
-              message: `No hay conversor para "${ext}" (se admiten .md, .scala, .ipynb).`,
+              message: `No hay conversor para "${ext}" (se admiten ${admitidas}).`,
             });
             break;
           }
@@ -138,9 +139,14 @@ class FormViewProvider implements vscode.WebviewViewProvider {
       (msg.outputPath || "").trim() || defaultOutputPath(inputPath, conv);
 
     try {
-      const input = fs.readFileSync(inputPath, "utf8");
+      const input = conv.binaryInput ? fs.readFileSync(inputPath) : fs.readFileSync(inputPath, "utf8");
       const result = conv.run(input, outputPath, !!msg.includeOutputs);
-      fs.writeFileSync(outputPath, result.content, "utf8");
+      const esBinario = Buffer.isBuffer(result.content);
+      if (esBinario) {
+        fs.writeFileSync(outputPath, result.content);
+      } else {
+        fs.writeFileSync(outputPath, result.content, "utf8");
+      }
       const outputDir = path.resolve(path.dirname(outputPath));
       for (const asset of result.assets ?? []) {
         const assetPath = path.resolve(outputDir, asset.relativePath);
@@ -153,8 +159,18 @@ class FormViewProvider implements vscode.WebviewViewProvider {
       log("ok", `OK → ${outputPath}`);
       log("info", result.log);
 
-      const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(outputPath));
-      await vscode.window.showTextDocument(doc, { preview: false });
+      if (esBinario) {
+        // Un .xlsx no se puede mostrar como texto: se delega al editor que VS Code tenga
+        // asociado (si hay una extensión de hojas de cálculo) y, si no, se avisa.
+        try {
+          await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(outputPath));
+        } catch {
+          log("info", "Archivo binario generado; ábrelo con Excel o LibreOffice.");
+        }
+      } else {
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(outputPath));
+        await vscode.window.showTextDocument(doc, { preview: false });
+      }
     } catch (err: any) {
       log("error", `Falló la conversión: ${err?.message ?? err}`);
     }

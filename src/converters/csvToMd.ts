@@ -101,7 +101,7 @@ function detectarDelim(text: string): string {
 
 /** Contenido de una celda GFM: sin saltos reales (parten la tabla), sin | suelto
  *  (abriría otra columna) y sin que el dato se cuele como HTML. */
-function mdCell(v: string): string {
+export function mdCell(v: string): string {
   return v
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

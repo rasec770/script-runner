@@ -1,5 +1,6 @@
 import * as assert from "node:assert/strict";
 import { test } from "node:test";
+import * as path from "path";
 import { mhtmlToMd } from "./mhtmlToMd";
 
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2n0kAAAAASUVORK5CYII=", "base64");
@@ -53,7 +54,7 @@ test("convierte contenido útil, conserva notas reales y extrae imágenes", () =
   assert.doesNotMatch(result.content, /Comentario histórico|Irrelevante|alert\(1\)/);
   assert.doesNotMatch(result.content, /Instrucciones post deploy|Instrucciones Automatizadas|Colocar instrucciones/);
   assert.equal(result.assets?.length, 1);
-  assert.equal(result.assets?.[0].relativePath, "salida_assets\\captura.png");
+  assert.equal(result.assets?.[0].relativePath, path.join("salida_assets", "captura.png"));
   assert.deepEqual(result.assets?.[0].content, PNG);
 });
 

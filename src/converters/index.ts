@@ -6,6 +6,8 @@ import { scalaToIpynb } from "./scalaToIpynb";
 import { ipynbToMd } from "./ipynbToMd";
 import { csvToMd } from "./csvToMd";
 import { mhtmlToMd } from "./mhtmlToMd";
+import { mdToXlsx } from "./mdToXlsx";
+import { xlsxToMd } from "./xlsxToMd";
 
 export interface Converter {
   id: string;
@@ -18,8 +20,14 @@ export interface Converter {
   hasOutputsOption: boolean;
   /** Sufijo por defecto que se añade al nombre de salida (evita pisar la fuente). */
   outputSuffix: string;
-  run: (input: string, outPath: string, includeOutputs: boolean) => ConvertResult;
+  /** Si la entrada se lee como binario (Buffer) en vez de texto utf8. */
+  binaryInput?: boolean;
+  run: (input: string | Buffer, outPath: string, includeOutputs: boolean) => ConvertResult<string | Buffer>;
 }
+
+/** Entrada como texto; los conversores de texto reciben siempre string, esto solo tipa. */
+const text = (input: string | Buffer): string => (Buffer.isBuffer(input) ? input.toString("utf8") : input);
+const binary = (input: string | Buffer): Buffer => (Buffer.isBuffer(input) ? input : Buffer.from(input, "utf8"));
 
 export const CONVERTERS: Converter[] = [
   {
@@ -29,7 +37,7 @@ export const CONVERTERS: Converter[] = [
     outputExt: ".ipynb",
     hasOutputsOption: false,
     outputSuffix: "",
-    run: (input, outPath) => mdToIpynb(input, outPath),
+    run: (input, outPath) => mdToIpynb(text(input), outPath),
   },
   {
     id: "scala-to-ipynb",
@@ -38,7 +46,7 @@ export const CONVERTERS: Converter[] = [
     outputExt: ".ipynb",
     hasOutputsOption: false,
     outputSuffix: "",
-    run: (input, outPath) => scalaToIpynb(input, outPath),
+    run: (input, outPath) => scalaToIpynb(text(input), outPath),
   },
   {
     id: "ipynb-to-md",
@@ -48,7 +56,7 @@ export const CONVERTERS: Converter[] = [
     hasOutputsOption: true,
     // El .md suele ser la fuente de verdad: no pisarlo por defecto.
     outputSuffix: "_reconstruido",
-    run: (input, _outPath, includeOutputs) => ipynbToMd(input, includeOutputs),
+    run: (input, _outPath, includeOutputs) => ipynbToMd(text(input), includeOutputs),
   },
   {
     id: "csv-to-md",
@@ -57,7 +65,7 @@ export const CONVERTERS: Converter[] = [
     outputExt: ".md",
     hasOutputsOption: false,
     outputSuffix: "",
-    run: (input) => csvToMd(input),
+    run: (input) => csvToMd(text(input)),
   },
   {
     id: "mhtml-to-md",
@@ -66,7 +74,26 @@ export const CONVERTERS: Converter[] = [
     outputExt: ".md",
     hasOutputsOption: false,
     outputSuffix: "",
-    run: (input, outPath) => mhtmlToMd(input, outPath),
+    run: (input, outPath) => mhtmlToMd(text(input), outPath),
+  },
+  {
+    id: "md-to-xlsx",
+    label: "Markdown (tablas) → Excel (.xlsx)",
+    inputExts: [".md"],
+    outputExt: ".xlsx",
+    hasOutputsOption: false,
+    outputSuffix: "",
+    run: (input) => mdToXlsx(text(input)),
+  },
+  {
+    id: "xlsx-to-md",
+    label: "Excel (.xlsx) → Markdown (tablas)",
+    inputExts: [".xlsx"],
+    outputExt: ".md",
+    hasOutputsOption: false,
+    outputSuffix: "",
+    binaryInput: true,
+    run: (input) => xlsxToMd(binary(input)),
   },
 ];
 

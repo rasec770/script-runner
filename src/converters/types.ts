@@ -1,8 +1,8 @@
 // Tipos y fábrica de notebooks compartidos por los conversores.
 
-export interface ConvertResult {
-  /** Contenido del archivo de salida ya serializado. */
-  content: string;
+export interface ConvertResult<T extends string | Buffer = string> {
+  /** Contenido del archivo de salida ya serializado: texto (utf8) o binario (.xlsx). */
+  content: T;
   /** Resumen legible de lo que se generó (para el log del formulario). */
   log: string;
   /** Recursos binarios generados junto al archivo principal (por ejemplo, imágenes). */

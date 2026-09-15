@@ -1,8 +1,8 @@
 {
   "name": "conversores-notebook",
   "displayName": "Conversores Notebook: Markdown, Databricks y Jupyter",
-  "description": "Convierte notebooks, CSV y exportaciones MHTML de Jira a Markdown desde un formulario en la barra lateral. Sin Python.",
-  "version": "0.4.0",
+  "description": "Convierte notebooks, CSV, Excel y exportaciones MHTML de Jira a Markdown, y tablas Markdown a Excel, desde un formulario en la barra lateral. Sin Python.",
+  "version": "0.5.0",
   "publisher": "rasec770",
   "license": "MIT",
   "repository": {
@@ -34,7 +34,9 @@
     "csv",
     "tabla",
     "mhtml",
-    "jira"
+    "jira",
+    "excel",
+    "xlsx"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",

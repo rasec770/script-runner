@@ -1,15 +1,16 @@
 # Conversores Notebook
 
 Convierte notebooks entre **Markdown**, **Scala (Databricks)** y **Jupyter (`.ipynb`)**,
-y archivos **CSV** en tablas Markdown, además de exportaciones **MHTML de Jira**,
-desde un formulario en la barra lateral de VS Code.
+archivos **CSV** en tablas Markdown, exportaciones **MHTML de Jira** a Markdown y
+tablas **Markdown ↔ Excel (`.xlsx`)** en ambos sentidos, desde un formulario en la
+barra lateral de VS Code.
 
 **Sin Python. Sin dependencias externas.** Toda la lógica está escrita en TypeScript
 y se ejecuta dentro del propio editor.
 
 ## Características
 
-- 🔄 **Cinco conversiones**: Markdown → Jupyter, Scala Databricks → Jupyter, Jupyter → Markdown, CSV → tabla Markdown y Jira MHTML → Markdown
+- 🔄 **Siete conversiones**: Markdown → Jupyter, Scala Databricks → Jupyter, Jupyter → Markdown, CSV → tabla Markdown, Jira MHTML → Markdown, Markdown → Excel y Excel → Markdown
 - 📂 Elige el archivo con **Examinar…** o usa directamente el **archivo activo del editor**
 - 📝 La ruta de salida se **sugiere automáticamente** (y puedes editarla)
 - 📊 En *Jupyter → Markdown*, opción de **incluir las salidas y errores** de las celdas
@@ -25,6 +26,8 @@ y se ejecuta dentro del propio editor.
 | Jupyter → Markdown         | `.ipynb` | `.md`    |
 | CSV → tabla Markdown      | `.csv`, `.tsv` | `.md` |
 | Jira MHTML → Markdown     | `.mhtml`, `.mht` | `.md` |
+| Markdown (tablas) → Excel | `.md`    | `.xlsx` |
+| Excel → Markdown (tablas) | `.xlsx`  | `.md`  |
 
 ## Uso
 
@@ -59,6 +62,27 @@ Las imágenes usadas por las instrucciones se decodifican desde MIME y se guarda
 una carpeta `<nombre>_assets` junto al Markdown. El conversor reescribe los enlaces
 para que se muestren localmente y excluye navegación, scripts, estilos, avatares y
 comentarios históricos de Jira.
+
+### Markdown (tablas) → Excel
+
+Cada tabla GFM del documento se convierte en una **hoja** del libro, nombrada con el
+encabezado (`#`, `##`, `###`…) más cercano que la precede; si dos tablas comparten
+encabezado, la segunda recibe el sufijo `(2)`. La primera fila queda en negrita, con
+fondo, panel congelado y autofiltro; el ancho de columna se ajusta al contenido.
+
+Dentro de las celdas se quitan las marcas inline (`` `código` ``, `**negrita**`,
+`*cursiva*`), `<br>` pasa a salto de línea real, `\|` a `|`, y los valores que son
+un número limpio (`1300`, `-3.5`) se guardan como numéricos. Una celda que contiene
+solo un enlace `[texto](destino)` se convierte en **hipervínculo**. El texto fuera
+de las tablas (párrafos, listas) no se conserva.
+
+### Excel → Markdown (tablas)
+
+Cada hoja con datos se convierte en una tabla GFM; la primera fila no vacía es el
+encabezado. Con más de una hoja, cada tabla va precedida de `## <nombre de hoja>`.
+Se leen cadenas compartidas y en línea, números, booleanos, fechas (se escriben como
+`AAAA-MM-DD`) e hipervínculos, que vuelven a ser `[texto](destino)`. Las fórmulas se
+sustituyen por su último valor calculado; estilos, combinaciones y gráficos se ignoran.
 
 ## Transmisor QR
 
@@ -101,7 +125,11 @@ src/
 │   ├── mdToIpynb.ts
 │   ├── scalaToIpynb.ts
 │   ├── ipynbToMd.ts
-│   └── mhtmlToMd.ts
+│   ├── csvToMd.ts
+│   ├── mhtmlToMd.ts
+│   ├── xlsxFile.ts         # lectura/escritura .xlsx (ZIP con fflate + XML)
+│   ├── mdToXlsx.ts
+│   └── xlsxToMd.ts
 └── qr/
     ├── encoder.ts          # ZIP (fflate) → fragmentos → QRs SVG (qrcode)
     ├── formView.ts         # vista lateral "Transmisor QR"
