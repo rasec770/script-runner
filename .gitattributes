@@ -1,0 +1,10 @@
+# Normaliza finales de línea a LF en el repo y en el checkout (evita diffs falsos entre Windows y Linux)
+* text=auto eol=lf
+
+# Binarios
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.vsix binary
