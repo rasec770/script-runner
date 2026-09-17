@@ -1,9 +1,12 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import { CONVERTERS, getConverter, defaultOutputPath } from "./converters";
+import { CONVERTERS, getConverter, defaultOutputPath, RunOptions } from "./converters";
 import { QrFormViewProvider } from "./qr/formView";
 import { activeFilePath } from "./activeFile";
+
+/** Sección de los ajustes de la extensión en settings.json. */
+const CONFIG_SECTION = "conversoresNotebook";
 
 export function activate(context: vscode.ExtensionContext): void {
   const provider = new FormViewProvider(context.extensionUri);
@@ -140,7 +143,24 @@ class FormViewProvider implements vscode.WebviewViewProvider {
 
     try {
       const input = conv.binaryInput ? fs.readFileSync(inputPath) : fs.readFileSync(inputPath, "utf8");
-      const result = conv.run(input, outputPath, !!msg.includeOutputs);
+      let options: RunOptions | undefined;
+      if (conv.needsTemplate) {
+        const templatePath = await this.resolveTemplate(log);
+        if (!templatePath) {
+          return;
+        }
+        if (path.resolve(templatePath) === path.resolve(outputPath)) {
+          log("error", "La salida no puede ser la propia plantilla: se sobrescribiría.");
+          return;
+        }
+        const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
+        options = {
+          template: fs.readFileSync(templatePath),
+          reviewer: (cfg.get<string>("checklistReviewer") ?? "").trim() || undefined,
+          keepAnswers: cfg.get<boolean>("checklistKeepAnswers") ?? true,
+        };
+      }
+      const result = conv.run(input, outputPath, !!msg.includeOutputs, options);
       const esBinario = Buffer.isBuffer(result.content);
       if (esBinario) {
         fs.writeFileSync(outputPath, result.content);
@@ -174,6 +194,37 @@ class FormViewProvider implements vscode.WebviewViewProvider {
     } catch (err: any) {
       log("error", `Falló la conversión: ${err?.message ?? err}`);
     }
+  }
+
+  /** Ruta de la plantilla del checklist: la del ajuste si existe; si no, se pide con un
+   *  diálogo y se guarda en los ajustes de usuario para no volver a preguntar. La plantilla
+   *  nunca se incluye en la extensión: es un documento propio de quien la usa. */
+  private async resolveTemplate(
+    log: (level: "info" | "error" | "ok", message: string) => void
+  ): Promise<string | undefined> {
+    const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
+    const guardada = (cfg.get<string>("checklistTemplate") ?? "").trim();
+    if (guardada && fs.existsSync(guardada)) {
+      log("info", `Plantilla: ${guardada}`);
+      return guardada;
+    }
+    if (guardada) {
+      log("info", `La plantilla configurada ya no existe: ${guardada}`);
+    }
+    const picked = await vscode.window.showOpenDialog({
+      canSelectMany: false,
+      openLabel: "Usar como plantilla",
+      title: "Selecciona la plantilla del checklist (.xlsx)",
+      filters: { Excel: ["xlsx"] },
+    });
+    if (!picked || !picked[0]) {
+      log("error", "Conversión cancelada: hace falta una plantilla de checklist (.xlsx).");
+      return undefined;
+    }
+    const elegida = picked[0].fsPath;
+    await cfg.update("checklistTemplate", elegida, vscode.ConfigurationTarget.Global);
+    log("info", `Plantilla guardada en los ajustes (${CONFIG_SECTION}.checklistTemplate): ${elegida}`);
+    return elegida;
   }
 
   private getHtml(webview: vscode.Webview): string {

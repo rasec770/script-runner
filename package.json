@@ -1,8 +1,8 @@
 {
   "name": "conversores-notebook",
   "displayName": "Conversores Notebook: Markdown, Databricks y Jupyter",
-  "description": "Convierte notebooks, CSV, Excel y exportaciones MHTML de Jira a Markdown, y tablas Markdown a Excel, desde un formulario en la barra lateral. Sin Python.",
-  "version": "0.5.1",
+  "description": "Convierte notebooks, CSV, Excel y exportaciones MHTML de Jira a Markdown, tablas Markdown a Excel y un Jira a su checklist en Excel, desde un formulario en la barra lateral. Sin Python.",
+  "version": "0.6.0",
   "publisher": "rasec770",
   "license": "MIT",
   "repository": {
@@ -36,7 +36,8 @@
     "mhtml",
     "jira",
     "excel",
-    "xlsx"
+    "xlsx",
+    "checklist"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
@@ -63,6 +64,27 @@
           "type": "webview"
         }
       ]
+    },
+    "configuration": {
+      "title": "Conversores Notebook",
+      "properties": {
+        "conversoresNotebook.checklistTemplate": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "Ruta de la plantilla `.xlsx` que usa **Jira MHTML → Checklist Excel**. Si está vacía o el archivo no existe, se pide al convertir y se guarda aquí. La plantilla no se incluye en la extensión."
+        },
+        "conversoresNotebook.checklistReviewer": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Nombre que se escribe en el campo **REVIEWER** del checklist. Si está vacío, se usa el campo `CL-DEV` de la incidencia de Jira."
+        },
+        "conversoresNotebook.checklistKeepAnswers": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Si está activo, el checklist sale **respondido como la plantilla** (resultados, observaciones y tabla de ambientes) y solo se actualizan los datos generales y el historial. Desactívalo para obtenerlo en blanco, con `NO APLICA` automático en las secciones cuya tecnología no aparece en el pase."
+        }
+      }
     }
   },
   "scripts": {

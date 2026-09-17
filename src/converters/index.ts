@@ -8,6 +8,17 @@ import { csvToMd } from "./csvToMd";
 import { mhtmlToMd } from "./mhtmlToMd";
 import { mdToXlsx } from "./mdToXlsx";
 import { xlsxToMd } from "./xlsxToMd";
+import { mhtmlToChecklist } from "./mhtmlToChecklist";
+
+/** Datos extra que algunos conversores necesitan además del archivo de entrada. */
+export interface RunOptions {
+  /** Contenido de la plantilla .xlsx (conversores con `needsTemplate`). */
+  template?: Buffer;
+  /** Nombre de quien revisa, para el checklist. */
+  reviewer?: string;
+  /** Si el checklist conserva las respuestas de la plantilla (por defecto, sí). */
+  keepAnswers?: boolean;
+}
 
 export interface Converter {
   id: string;
@@ -22,7 +33,16 @@ export interface Converter {
   outputSuffix: string;
   /** Si la entrada se lee como binario (Buffer) en vez de texto utf8. */
   binaryInput?: boolean;
-  run: (input: string | Buffer, outPath: string, includeOutputs: boolean) => ConvertResult<string | Buffer>;
+  /** Si necesita una plantilla .xlsx del usuario; la extensión la pide y la recuerda. */
+  needsTemplate?: boolean;
+  /** Nombre de salida propio (sin carpeta) cuando no basta con cambiar la extensión. */
+  outputName?: (inputPath: string) => string | undefined;
+  run: (
+    input: string | Buffer,
+    outPath: string,
+    includeOutputs: boolean,
+    options?: RunOptions
+  ) => ConvertResult<string | Buffer>;
 }
 
 /** Entrada como texto; los conversores de texto reciben siempre string, esto solo tipa. */
@@ -77,6 +97,30 @@ export const CONVERTERS: Converter[] = [
     run: (input, outPath) => mhtmlToMd(text(input), outPath),
   },
   {
+    id: "mhtml-to-checklist",
+    label: "Jira MHTML → Checklist Excel (.xlsx)",
+    inputExts: [".mhtml", ".mht"],
+    outputExt: ".xlsx",
+    hasOutputsOption: false,
+    outputSuffix: "",
+    needsTemplate: true,
+    // "[#OCD-233595] Título largo.mhtml" -> "CHECKLIST-OCD-233595.xlsx"
+    outputName: (inputPath) => {
+      const key = /\b([A-Z][A-Z0-9_]*-\d+)\b/.exec(path.basename(inputPath))?.[1];
+      return key ? `CHECKLIST-${key}.xlsx` : undefined;
+    },
+    run: (input, _outPath, _includeOutputs, options) => {
+      if (!options?.template) {
+        throw new Error("Falta la plantilla del checklist (.xlsx).");
+      }
+      return mhtmlToChecklist(text(input), {
+        template: options.template,
+        reviewer: options.reviewer,
+        keepAnswers: options.keepAnswers,
+      });
+    },
+  },
+  {
     id: "md-to-xlsx",
     label: "Markdown (tablas) → Excel (.xlsx)",
     inputExts: [".md"],
@@ -104,6 +148,10 @@ export function getConverter(id: string): Converter | undefined {
 /** Deriva la ruta de salida por defecto a partir de la entrada y el conversor. */
 export function defaultOutputPath(inputPath: string, conv: Converter): string {
   const dir = path.dirname(inputPath);
+  const propio = conv.outputName?.(inputPath);
+  if (propio) {
+    return path.join(dir, propio);
+  }
   const base = path.basename(inputPath, path.extname(inputPath));
   return path.join(dir, base + conv.outputSuffix + conv.outputExt);
 }

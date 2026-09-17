@@ -18,6 +18,22 @@ export interface XlsxSheet {
   rows: XlsxCell[][];
 }
 
+/** Hoja leída de forma dispersa: solo las celdas con valor, indexadas por referencia ("C3").
+ *  Sirve para plantillas con celdas muy alejadas (listas auxiliares en la columna XFC),
+ *  donde una matriz densa tendría miles de columnas vacías. */
+export interface XlsxSheetCells {
+  name: string;
+  /** Ruta de la hoja dentro del ZIP, p. ej. "xl/worksheets/sheet1.xml". */
+  path: string;
+  cells: Map<string, XlsxCell>;
+}
+
+/** Descompone "C3" en columna y fila, ambas en base 0. */
+export function parseRef(ref: string): { col: number; row: number } | undefined {
+  const m = /^([A-Z]+)(\d+)$/.exec(ref);
+  return m ? { col: colIndex(m[1]), row: Number(m[2]) - 1 } : undefined;
+}
+
 /** Excel limita los nombres de hoja a 31 caracteres y prohíbe estos símbolos. */
 const SHEET_NAME_MAX = 31;
 const SHEET_NAME_FORBIDDEN = /[\[\]:*?/\\]/g;
@@ -76,7 +92,7 @@ export function colLetter(idx: number): string {
 }
 
 /** A -> 0, Z -> 25, AA -> 26. */
-function colIndex(letters: string): number {
+export function colIndex(letters: string): number {
   let n = 0;
   for (const ch of letters) {
     n = n * 26 + (ch.charCodeAt(0) - 64);
@@ -383,16 +399,14 @@ function leerRels(xml: string | undefined): Map<string, string> {
   return out;
 }
 
-function leerHoja(
+function leerCeldas(
   xml: string,
   shared: string[],
   esFecha: boolean[],
   date1904: boolean,
   rels: Map<string, string>
-): XlsxCell[][] {
-  const grid = new Map<number, Map<number, XlsxCell>>();
-  let maxRow = -1;
-  let maxCol = -1;
+): Map<string, XlsxCell> {
+  const cells = new Map<string, XlsxCell>();
 
   const dataBlock = /<sheetData\b[^>]*>([\s\S]*?)<\/sheetData>/.exec(xml);
   if (dataBlock) {
@@ -402,12 +416,9 @@ function leerHoja(
       const tag = m[1];
       const inner = m[2] ?? "";
       const ref = attr(tag, "r");
-      const refMatch = ref && /^([A-Z]+)(\d+)$/.exec(ref);
-      if (!refMatch) {
+      if (!ref || !parseRef(ref)) {
         continue;
       }
-      const col = colIndex(refMatch[1]);
-      const row = Number(refMatch[2]) - 1;
       const tipo = attr(tag, "t") ?? "n";
       const estilo = Number(attr(tag, "s") ?? -1);
 
@@ -438,12 +449,7 @@ function leerHoja(
       if (cell.text === "" && cell.num === undefined) {
         continue;
       }
-      if (!grid.has(row)) {
-        grid.set(row, new Map());
-      }
-      grid.get(row)!.set(col, cell);
-      maxRow = Math.max(maxRow, row);
-      maxCol = Math.max(maxCol, col);
+      cells.set(ref, cell);
     }
   }
 
@@ -453,30 +459,47 @@ function leerHoja(
   while ((lm = reLink.exec(xml))) {
     const ref = attr(lm[1], "ref");
     const rid = attr(lm[1], "r:id");
-    const refMatch = ref && /^([A-Z]+)(\d+)$/.exec(ref);
-    if (!refMatch || !rid) {
+    if (!ref || !rid) {
       continue;
     }
     const target = rels.get(rid);
-    const cell = grid.get(Number(refMatch[2]) - 1)?.get(colIndex(refMatch[1]));
+    const cell = cells.get(ref);
     if (target && cell) {
       cell.link = target;
     }
   }
+  return cells;
+}
 
-  if (maxRow < 0) {
-    return [];
+/** Matriz densa (fila x columna) desde A1 hasta la última celda con valor. */
+function densa(cells: Map<string, XlsxCell>): XlsxCell[][] {
+  let maxRow = -1;
+  let maxCol = -1;
+  const porFila = new Map<number, Map<number, XlsxCell>>();
+  for (const [ref, cell] of cells) {
+    const pos = parseRef(ref)!;
+    if (!porFila.has(pos.row)) {
+      porFila.set(pos.row, new Map());
+    }
+    porFila.get(pos.row)!.set(pos.col, cell);
+    maxRow = Math.max(maxRow, pos.row);
+    maxCol = Math.max(maxCol, pos.col);
   }
   const rows: XlsxCell[][] = [];
   for (let r = 0; r <= maxRow; r++) {
-    const fila = grid.get(r);
+    const fila = porFila.get(r);
     rows.push(Array.from({ length: maxCol + 1 }, (_, c) => fila?.get(c) ?? { text: "" }));
   }
   return rows;
 }
 
-/** Lee todas las hojas de un .xlsx en el orden del libro. */
+/** Lee todas las hojas de un .xlsx en el orden del libro, como matrices densas. */
 export function readXlsx(data: Buffer | Uint8Array): XlsxSheet[] {
+  return readXlsxCells(data).map((s) => ({ name: s.name, rows: densa(s.cells) }));
+}
+
+/** Lee todas las hojas de un .xlsx en el orden del libro, solo con las celdas con valor. */
+export function readXlsxCells(data: Buffer | Uint8Array): XlsxSheetCells[] {
   let zip: Record<string, Uint8Array>;
   try {
     zip = unzipSync(data instanceof Uint8Array ? data : new Uint8Array(data));
@@ -494,7 +517,7 @@ export function readXlsx(data: Buffer | Uint8Array): XlsxSheet[] {
   const shared = leerSharedStrings(texto("xl/sharedStrings.xml"));
   const esFecha = leerEstilosFecha(texto("xl/styles.xml"));
 
-  const sheets: XlsxSheet[] = [];
+  const sheets: XlsxSheetCells[] = [];
   const reSheet = /<sheet\b([^>]*)\/>/g;
   let m: RegExpExecArray | null;
   while ((m = reSheet.exec(workbook))) {
@@ -511,7 +534,7 @@ export function readXlsx(data: Buffer | Uint8Array): XlsxSheet[] {
     }
     const relsPath = ruta.replace(/([^/]+)$/, "_rels/$1.rels");
     const rels = leerRels(texto(relsPath));
-    sheets.push({ name, rows: leerHoja(xml, shared, esFecha, date1904, rels) });
+    sheets.push({ name, path: ruta, cells: leerCeldas(xml, shared, esFecha, date1904, rels) });
   }
   return sheets;
 }

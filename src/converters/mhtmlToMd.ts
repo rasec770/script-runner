@@ -393,15 +393,22 @@ function selectFields(root: HtmlNode): {
   return { context, instructions, window };
 }
 
+/** Clave, enlace y resumen de la incidencia, tomados del título de la vista de Jira. */
+function issueTitle(root: HtmlNode): { node?: HtmlNode; key: string; url: string; summary: string } {
+  const node = [...walk(root)].find((n) => n.tag === "h3" && (n.attrs.class ?? "").includes("formtitle"));
+  const link = node && [...walk(node)].find((n) => n.tag === "a" && /\/browse\/[A-Z][A-Z0-9_]*-\d+/.test(n.attrs.href ?? ""));
+  const url = link?.attrs.href?.trim() ?? "";
+  const key = /\/browse\/([A-Z][A-Z0-9_]*-\d+)/.exec(url)?.[1] ?? "";
+  return { node, key, url, summary: link ? plainText(link) : "" };
+}
+
 /** Clave de la incidencia y fechas del título ("Creada: … Actualizada: …"). */
 function issueHeader(root: HtmlNode): Array<[string, string]> {
   const out: Array<[string, string]> = [];
-  const title = [...walk(root)].find((n) => n.tag === "h3" && (n.attrs.class ?? "").includes("formtitle"));
-  if (!title) return out;
-  const link = [...walk(title)].find((n) => n.tag === "a" && /\/browse\/[A-Z][A-Z0-9_]*-\d+/.test(n.attrs.href ?? ""));
-  const key = /\/browse\/([A-Z][A-Z0-9_]*-\d+)/.exec(link?.attrs.href ?? "");
-  if (key && link) out.push(["Clave", `[${key[1]}](${link.attrs.href!.trim()})`]);
-  const texto = plainText(title);
+  const title = issueTitle(root);
+  if (!title.node) return out;
+  if (title.key) out.push(["Clave", `[${title.key}](${title.url})`]);
+  const texto = plainText(title.node);
   for (const etiqueta of ["Creada", "Actualizada", "Resuelta", "Created", "Updated", "Resolved"]) {
     const m = new RegExp(`${etiqueta}:\\s*(\\S+(?: \\d{1,2}:\\d{2}(?: [AP]M)?)?)`).exec(texto);
     if (m) out.push([etiqueta, m[1]]);
@@ -447,13 +454,44 @@ function extractImages(
   return { links, assets };
 }
 
-/** Convierte el texto completo de un MHTML exportado por Jira. */
-export function mhtmlToMd(raw: string, outPath: string): ConvertResult {
+function loadIssue(raw: string): { mime: ReturnType<typeof parseMhtml>; htmlPart: MimePart; root: HtmlNode } {
   const mime = parseMhtml(raw);
   const htmlPart = mime.parts.find((part) => (part.headers.get("content-type") ?? "").toLowerCase().startsWith("text/html"));
   if (!htmlPart) throw new Error("El MHTML no contiene una parte text/html.");
-  const html = decodeMimeBody(htmlPart).toString("utf8");
-  const root = parseHtml(html);
+  return { mime, htmlPart, root: parseHtml(decodeMimeBody(htmlPart).toString("utf8")) };
+}
+
+/** Incidencia de Jira ya estructurada, en texto plano, para conversores que no generan Markdown. */
+export interface JiraIssue {
+  key: string;
+  url: string;
+  summary: string;
+  /** Campos de contexto por etiqueta ("Informador", "QE"…), sin los de instrucciones. */
+  fields: Map<string, string>;
+  description: string;
+  /** Secciones de instrucciones con contenido real, por etiqueta. */
+  instructions: Map<string, string>;
+}
+
+export function readJiraIssue(raw: string): JiraIssue {
+  const { mime, root } = loadIssue(raw);
+  const title = issueTitle(root);
+  const subject = decodeMimeWords(mime.headers.get("subject") ?? "").trim();
+  const { context, instructions } = selectFields(root);
+  const description = findById(root, DESCRIPTION_ID);
+  return {
+    key: title.key || (/\b([A-Z][A-Z0-9_]*-\d+)\b/.exec(subject)?.[1] ?? ""),
+    url: title.url,
+    summary: title.summary || subject.replace(/^\[#?[A-Z][A-Z0-9_]*-\d+\]\s*/, ""),
+    fields: new Map(context.map(([label, node]) => [label, plainText(node)])),
+    description: description ? plainText(description) : "",
+    instructions: new Map(instructions.map(([label, node]) => [label, plainText(node)])),
+  };
+}
+
+/** Convierte el texto completo de un MHTML exportado por Jira. */
+export function mhtmlToMd(raw: string, outPath: string): ConvertResult {
+  const { mime, htmlPart, root } = loadIssue(raw);
   const subject = decodeMimeWords(mime.headers.get("subject") ?? "").trim() || path.basename(outPath, path.extname(outPath));
   const sourceUrl = htmlPart.headers.get("content-location")?.trim() ?? "";
 
