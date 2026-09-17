@@ -25,23 +25,8 @@ const INSTRUCTION_LABELS = [
   "Instrucciones Automatizadas",
 ];
 
-const CONTEXT_LABELS = [
-  "Estado",
-  "Proyecto",
-  "Tipo",
-  "Prioridad",
-  "Persona asignada",
-  "Sustento",
-  "Enlace de Manual de Sistemas",
-  "Criticidad OCD",
-  "TIPO DE REQUERIMIENTO",
-  "Nro. Ticket - SDAS",
-  "Aplicación",
-  "Aplicación / Grupo AgileOps",
-  "Tipo de Ratificación",
-  "Indisponibilidad del Canal",
-  "Aplica Pruebas de Reversión",
-];
+/** El cuerpo de la descripción se rinde aparte, en su propia sección. */
+const DESCRIPTION_ID = "descriptionArea";
 
 const TEMPLATE_ONLY_TEXT = [
   "certificación",
@@ -217,20 +202,33 @@ function findById(root: HtmlNode, id: string): HtmlNode | undefined {
   return undefined;
 }
 
+/** Pares etiqueta/valor de las tablas de la incidencia, en orden de documento. Una
+ *  etiqueta es una celda cuyo texto acaba en ":"; así las filas de datos de las tablas
+ *  anidadas (enlaces, subtareas) no se confunden con campos. No se desciende dentro de
+ *  una fila ya reconocida, de modo que el valor conserva su tabla interna intacta. */
 function fieldNodes(root: HtmlNode): Array<[string, HtmlNode]> {
   const fields: Array<[string, HtmlNode]> = [];
-  for (const row of walk(root)) {
-    if (row.tag !== "tr") continue;
-    const cells = row.children.filter(
-      (child): child is HtmlNode => typeof child !== "string" && (child.tag === "td" || child.tag === "th")
-    );
-    if (cells.length !== 2 && cells.length !== 4) continue;
-    for (let i = 0; i < cells.length; i += 2) {
-      const label = plainText(cells[i]).replace(/:\s*$/, "").trim();
-      const value = plainText(cells[i + 1]);
-      if (label && value && label.length <= 80) fields.push([label, cells[i + 1]]);
+  const visit = (node: HtmlNode): void => {
+    if (node.tag === "tr") {
+      const cells = node.children.filter(
+        (child): child is HtmlNode => typeof child !== "string" && (child.tag === "td" || child.tag === "th")
+      );
+      if (cells.length === 2 || cells.length === 4) {
+        let found = false;
+        for (let i = 0; i < cells.length; i += 2) {
+          const raw = plainText(cells[i]);
+          if (!/:\s*$/.test(raw)) continue;
+          const label = raw.replace(/:\s*$/, "").trim();
+          if (!label || label.length > 80) continue;
+          found = true;
+          if (plainText(cells[i + 1])) fields.push([label, cells[i + 1]]);
+        }
+        if (found) return;
+      }
     }
-  }
+    for (const child of node.children) if (typeof child !== "string") visit(child);
+  };
+  visit(root);
   return fields;
 }
 
@@ -261,13 +259,15 @@ class MarkdownRenderer {
   }
 
   private children(node: HtmlNode): string {
-    return node.children.map((child) => typeof child === "string" ? child.replace(/\u00a0/g, " ") : this.renderNode(child)).join("");
+    return node.children
+      .map((child) => (typeof child === "string" ? child.replace(/[\s\u00a0]+/g, " ") : this.renderNode(child)))
+      .join("");
   }
 
   private renderNode(node: HtmlNode): string {
     const tag = node.tag;
     if (SKIP_TAGS.has(tag)) return "";
-    if (tag === "br") return "\n";
+    if (tag === "br") return "\n\n";
     if (tag === "hr") return "\n\n---\n\n";
     if (/^h[1-6]$/.test(tag)) {
       const level = Math.min(6, Number(tag[1]) + this.headingOffset);
@@ -321,6 +321,23 @@ class MarkdownRenderer {
     return this.children(node);
   }
 
+  /** Tabla de "Enlaces de incidencias": filas de una celda (el grupo, p. ej. "Test")
+   *  seguidas de filas relación/clave/resumen/estado. Se aplana con el grupo como columna. */
+  private renderLinksTable(rows: string[][]): string | undefined {
+    const datos = rows.filter((row) => row.length > 1);
+    if (!datos.length || !rows.some((row) => row.length === 1) || datos.some((row) => row.length !== 4)) {
+      return undefined;
+    }
+    const line = (cells: string[]) => `| ${cells.join(" | ")} |`;
+    const out = [line(["Grupo", "Relación", "Incidencia", "Resumen", "Estado"]), line(Array(5).fill("---"))];
+    let grupo = "";
+    for (const row of rows) {
+      if (row.length === 1) grupo = row[0].replace(/^\*\*(.*)\*\*$/, "$1");
+      else out.push(line([grupo, ...row]));
+    }
+    return `\n\n${out.join("\n")}\n\n`;
+  }
+
   private renderTable(table: HtmlNode): string {
     const rows: string[][] = [];
     const visit = (node: HtmlNode) => {
@@ -336,6 +353,10 @@ class MarkdownRenderer {
     };
     visit(table);
     if (!rows.length) return "";
+    const enlaces = this.renderLinksTable(rows);
+    if (enlaces) return enlaces;
+    // La fila de títulos ya se distingue por ser el encabezado: la negrita sobra.
+    rows[0] = rows[0].map((cell) => cell.replace(/^\*\*(.*)\*\*$/, "$1"));
     const width = Math.max(...rows.map((row) => row.length));
     const padded = rows.map((row) => [...row, ...Array(width - row.length).fill("")]);
     const line = (cells: string[]) => `| ${cells.join(" | ")} |`;
@@ -357,13 +378,35 @@ function selectFields(root: HtmlNode): {
 } {
   const first = new Map<string, HtmlNode>();
   for (const [label, node] of fieldNodes(root)) if (!first.has(label)) first.set(label, node);
-  const context = CONTEXT_LABELS.flatMap((label) => first.has(label) ? [[label, first.get(label)!] as [string, HtmlNode]] : []);
+  const esVentana = (label: string) => label.startsWith("Inicio de ") || label.startsWith("Fin de ");
+  const context = [...first.entries()].filter(
+    ([label, node]) =>
+      !INSTRUCTION_LABELS.includes(label) &&
+      !esVentana(label) &&
+      ![...walk(node)].some((n) => n.attrs.id === DESCRIPTION_ID)
+  );
   const instructions = INSTRUCTION_LABELS.flatMap((label) => {
     const node = first.get(label);
     return node && hasMeaningfulInstruction(node) ? [[label, node] as [string, HtmlNode]] : [];
   });
-  const window = [...first.entries()].filter(([label]) => label.startsWith("Inicio de ") || label.startsWith("Fin de "));
+  const window = [...first.entries()].filter(([label]) => esVentana(label));
   return { context, instructions, window };
+}
+
+/** Clave de la incidencia y fechas del título ("Creada: … Actualizada: …"). */
+function issueHeader(root: HtmlNode): Array<[string, string]> {
+  const out: Array<[string, string]> = [];
+  const title = [...walk(root)].find((n) => n.tag === "h3" && (n.attrs.class ?? "").includes("formtitle"));
+  if (!title) return out;
+  const link = [...walk(title)].find((n) => n.tag === "a" && /\/browse\/[A-Z][A-Z0-9_]*-\d+/.test(n.attrs.href ?? ""));
+  const key = /\/browse\/([A-Z][A-Z0-9_]*-\d+)/.exec(link?.attrs.href ?? "");
+  if (key && link) out.push(["Clave", `[${key[1]}](${link.attrs.href!.trim()})`]);
+  const texto = plainText(title);
+  for (const etiqueta of ["Creada", "Actualizada", "Resuelta", "Created", "Updated", "Resolved"]) {
+    const m = new RegExp(`${etiqueta}:\\s*(\\S+(?: \\d{1,2}:\\d{2}(?: [AP]M)?)?)`).exec(texto);
+    if (m) out.push([etiqueta, m[1]]);
+  }
+  return out;
 }
 
 function extractImages(
@@ -426,15 +469,18 @@ export function mhtmlToMd(raw: string, outPath: string): ConvertResult {
   }
 
   const { context, instructions, window } = selectFields(root);
-  const description = findById(root, "descriptionArea");
-  const selectedNodes = [...context, ...instructions, ...window].map(([, node]) => node);
+  const description = findById(root, DESCRIPTION_ID);
+  // Los campos de contexto solo traen iconos y avatares de Jira: no aportan imágenes.
+  const selectedNodes = [...instructions, ...window].map(([, node]) => node);
   if (description) selectedNodes.push(description);
   const { links, assets } = extractImages(selectedNodes, imageParts, outPath);
   const renderer = new MarkdownRenderer(links);
   const lines = [`# ${subject}`];
   if (sourceUrl) lines.push("", `Fuente: [${sourceUrl}](${sourceUrl})`);
-  if (context.length) {
+  const cabecera = issueHeader(root);
+  if (context.length || cabecera.length) {
     lines.push("", "## Contexto", "");
+    for (const [label, value] of cabecera) lines.push(`- **${label}:** ${value}`);
     for (const [label, node] of context) {
       const value = renderer.render(node);
       if (value.includes("\n")) lines.push("", `### ${label}`, "", value, "");
@@ -454,6 +500,6 @@ export function mhtmlToMd(raw: string, outPath: string): ConvertResult {
   return {
     content,
     assets,
-    log: `${instructions.length} sección(es) de instrucciones, ${assets.length} imagen(es) extraída(s)`,
+    log: `${context.length + cabecera.length} campo(s) de contexto, ${instructions.length} sección(es) de instrucciones, ${assets.length} imagen(es) extraída(s)`,
   };
 }

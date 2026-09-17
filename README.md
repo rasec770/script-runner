@@ -58,6 +58,12 @@ el contexto, la descripción, las instrucciones de despliegue y la ventana de
 ejecución. Las secciones ausentes o que sólo conservan texto de plantilla se omiten;
 una nota real como «no aplica» sí se conserva.
 
+El **contexto** recoge *todos* los campos de la incidencia en el orden en que aparecen
+(estado, informador, responsables, campos personalizados…), además de la clave y las
+fechas de creación y actualización del título. Los campos sin valor se omiten. Los
+**enlaces de incidencias** y las **subtareas** se vuelcan como tablas; en los enlaces,
+el grupo («Test», «OCD»…) pasa a ser una columna.
+
 Las imágenes usadas por las instrucciones se decodifican desde MIME y se guardan en
 una carpeta `<nombre>_assets` junto al Markdown. El conversor reescribe los enlaces
 para que se muestren localmente y excluye navegación, scripts, estilos, avatares y
